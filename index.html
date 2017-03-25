@@ -1,3 +1,55 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Socket.IO chat</title>
+    <script src="http://www.babylonjs.com/hand.minified-1.2.js"></script>
+        <script src="http://www.babylonjs.com/cannon.js"></script>
+        <script src="http://www.babylonjs.com/oimo.js"></script>
+        <script src="https://www.babylonjs.com/babylon.js"></script>
+
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      body { font: 13px Helvetica, Arial; }
+      form { background: #000; padding: 3px; position: fixed; bottom: 0; width: 100%; }
+      form input { border: 0; padding: 10px; width: 90%; margin-right: .5%; }
+      form button { width: 9%; background: rgb(130, 224, 255); border: none; padding: 10px; }
+      #messages { list-style-type: none; margin: 0; padding: 0; }
+      #messages li { padding: 5px 10px; }
+      #messages li:nth-child(odd) { background: #eee; }
+      #messages { margin-bottom: 40px }
+       #renderCanvas {
+                width: 100%;
+                height: 100%;
+                touch-action: none;
+            }
+    </style>
+  </head>
+     <div id="canvasZone">
+        <canvas id="renderCanvas"></canvas>
+    </div>
+  <body>
+    <ul id="messages"></ul>
+    <form action="">
+      <input id="m" autocomplete="off" /><button id = 'login/msg'>Send</button>
+    </form>
+    <script src="https://cdn.socket.io/socket.io-1.2.0.js"></script>
+    <script src="https://code.jquery.com/jquery-1.11.1.js"></script>
+    <script>
+    //babylonjs 
+      var canvas = document.getElementById("renderCanvas");
+        var engine = new BABYLON.Engine(canvas, true);
+
+      var createScene = function () {
+
+    // This creates a basic Babylon Scene object (non-mesh)
+    var scene = new BABYLON.Scene(engine);
+
+    // This creates and positions a free camera (non-mesh)
+    var camera = new BABYLON.FreeCamera("camera1", new BABYLON.Vector3(0, 4, -10), scene);
+
+    // This targets the camera to scene origin
+    camera.setTarget(BABYLON.Vector3.Zero());
+
     // This attaches the camera to the canvas
     camera.attachControl(canvas, true);
 
@@ -67,3 +119,185 @@ var skybox = BABYLON.Mesh.CreateBox("skyBox", 100.0, scene);
 		sphere.rotationQuaternion = BABYLON.Quaternion.Identity();
         var bone = skeleton.bones[4];
         var speed = 0.05
+	})
+        //login authentication
+         //////////////////player1///////////////
+        //player1
+var megabotA;
+	var skeleton;
+    var offset = 4
+	BABYLON.SceneLoader.ImportMesh("", "https://raw.githubusercontent.com/eddicke/wevgl/master/", "megabot2.babylon", scene, function (newMeshes, particleSystems, skeletons) {
+	    megabotA = newMeshes[0];
+		skeleton = skeletons[0];
+	//	console.log(skeleton.bones)
+	    megabotA.rotation.y = Math.PI / 2;
+		megabotA.scaling = new BABYLON.Vector3(0.8,0.8,0.8);
+	    megabotA.position = new BABYLON.Vector3(4, 0, 3);
+	megabotA.setEnabled(false)			
+		skeleton.position = new BABYLON.Vector3(0, 0, 0);
+		skeleton.scaling = new BABYLON.Vector3(0.02,0.02,0.02);
+					 scene.beginAnimation(skeletons[0], 0, 150, true, 1.5);
+		sphere.attachToBone(skeleton.bones[4], megabotA);
+    sphere.position.y = 0.8;
+   
+		sphere.scaling = new BABYLON.Vector3(0.1, 0.1, 0.1);
+		sphere.rotationQuaternion = BABYLON.Quaternion.Identity();
+        var bone = skeleton.bones[8];
+        scene.registerBeforeRender(function(){
+
+            
+        })
+		////player1-auth/////		
+         $("#m").keyup(function(e) { 
+    if (this.value == 'Babylonjs'){
+        $(this).css('backgroundColor','green');
+         window.onkeyup = function(e) {
+    var key = e.keyCode ? e.keyCode : e.which;
+    
+    if (key == 38) {
+        socket.emit('player1', 'moveup');
+    }else if (key == 40) {
+         socket.emit('player1-1', 'movedown');
+    }
+    }
+      socket.emit('hunts', 'online');
+   camera.lockedTarget = megabotA;
+      ////picked point evt
+     scene.onPointerDown = function(evt, pickResult){
+	    var pickResult = scene.pick(scene.pointerX, scene.pointerY);
+		    if(pickResult.hit){
+		    //****do soomething here****//
+		    }
+		    socket.emit('power', pickResult.pickedPoint.x)
+	    }
+	    //pointer-up idle state!
+	    scene.onPointerUp = function(){
+		   
+		    socket.emit('power2', 'stop')
+	    }
+    
+   ///////////********
+    }
+      
+          
+})
+  
+		////player2-auth/////		
+         $("#m").keyup(function(e) { 
+    if (this.value == 'hunts'){
+	 socket.emit('player2', 'player2');  
+	    camera.lockedTarget = megabotB;
+	    scene.onPointerDown = function(evt, pickResult){
+	    var pickResult = scene.pick(scene.pointerX, scene.pointerY);
+		    if(pickResult.hit){
+		    //****do soomething here****//
+		    }
+		    socket.emit('state', pickResult.pickedPoint.x)
+	    }
+	    //pointer-up idle state!
+	    scene.onPointerUp = function(){
+		   
+		    socket.emit('state2', 'stop')
+	    }
+    }
+		 })
+        //chat
+        $('form').submit(function(){
+          socket.emit('chat message', $('#m').val());
+          $('#m').val('');
+          return false;
+        });
+        socket.on('chat message', function(msg){
+          $('#messages').append($('<li>').text(msg));
+          window.scrollTo(0, document.body.scrollHeight);
+        });
+	 /////////////-evt-////////     
+	      socket.on('hunts', function(msg){
+         megabotA.setEnabled(true)
+		      
+		      //global-collision
+		       scene.registerBeforeRender(function(){
+if(megabotB.intersectsMesh(megabotA)){
+megabotA.dispose()
+}
+       })
+	      });
+	         socket.on('player2', function(msg){
+         megabotB.setEnabled(true)
+	      });
+		///////player1////////
+		socket.on('power', function(msg){
+         scene.beginAnimation(skeletons[0], 10,30, true, 2);
+    //walk forward
+    if(msg > megabotA.position.x){
+    var go = setInterval(function(){
+megabotA.position.x += 0.5;
+    }, 100)
+    }
+    //walk backward
+    if(msg < megabotA.position.x){
+     var back = setInterval(function(){
+megabotA.position.x -= 0.5;
+    },100)
+      }
+			 //idle state
+  socket.on('power2', function(msg){
+        
+     clearInterval(go)
+     clearInterval(back)
+     scene.beginAnimation(skeletons[0], 0,150, true, 2);
+		 
+		 })
+
+	      });
+		 ///////////player2///////////
+		 socket.on('state', function(msg){
+         scene.beginAnimation(skeletons[0], 10,30, true, 2);
+    //walk forward
+    if(msg > megabotB.position.x){
+    var go = setInterval(function(){
+megabotB.position.x += 0.5;
+    }, 100)
+    }
+    //walk backward
+    if(msg < megabotB.position.x){
+     var back = setInterval(function(){
+megabotB.position.x -= 0.5;
+    },100)
+      }
+			 //idle state
+  socket.on('state2', function(msg){
+        
+     clearInterval(go)
+     clearInterval(back)
+     scene.beginAnimation(skeletons[0], 0,150, true, 2);
+		 
+		 })
+
+	      });
+		
+//***//HALT!!
+	});
+	         }) 
+ 
+    // Our built-in 'ground' shape. Params: name, width, depth, subdivs, scene
+    var ground = BABYLON.Mesh.CreateGround("ground1", 36, 36, 2, scene);
+ 
+    return scene;
+
+};        
+        var scene = createScene();
+
+        engine.runRenderLoop(function () {
+            scene.render();
+        });
+
+        // Resize
+        window.addEventListener("resize", function () {
+            engine.resize();
+        });
+   
+      //////////////////////server side///////////////////////
+    </script>
+  </body>
+</html>
